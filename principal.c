@@ -22,6 +22,8 @@ typedef struct
 {
     int pid;
     page paginationTable[NUMBE_PAGES];
+    int pagesInMemory[WSL];
+    int inMemory;
 } processo;
 
 typedef struct 
@@ -32,7 +34,7 @@ typedef struct
 
 void delay(int number_of_seconds);
 void escreveArquivo(char string[], int pid);
-void runProcesses(processo processos[20], mainMemory memory);
+void runProcesses(mainMemory memory);
 int isMemoryFull(mainMemory memory);
 
 int main() {
@@ -41,16 +43,24 @@ int main() {
     memory.frames = NUMBER_FRAME;
     memory.framesInUse = 0;
 
-    processo processos[20];
-
-    runProcesses(processos, memory);
+    runProcesses(memory);
 
     return 0;
 }
 
 // =============== BEGIN GERENCIADOR MEMORIA =============== //
-void runProcesses(processo processos[20], mainMemory memory) {
+void runProcesses(mainMemory memory) {
+    processo processos[20];
 
+    int elapseTime = 1;
+    int run = 1;
+	
+    while(run) {
+        int isFull = isMemoryFull(memory); // Verifica se memoria esta cheia
+        if ( isFull == 0 ) {
+	    //verificar se tem processo pronto
+	}
+    }
 }
 
 int isMemoryFull(mainMemory memory) {
