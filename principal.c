@@ -5,7 +5,8 @@
 
 #define NUMBER_FRAME 64
 #define WSL 4
-#define NUMBE_PAGES 10
+#define NUMBER_PAGES 10
+#define NUMBER_PROCESS 20
 
 typedef struct {
     int frames;
@@ -20,8 +21,11 @@ typedef struct
 
 typedef struct
 {
+    int ativo;
     int pid;
-    page paginationTable[NUMBE_PAGES];
+    page paginationTable[NUMBER_PAGES];
+    int pagesInMemory[WSL];
+    int inMemory;
 } processo;
 
 typedef struct 
@@ -32,25 +36,50 @@ typedef struct
 
 void delay(int number_of_seconds);
 void escreveArquivo(char string[], int pid);
-void runProcesses(processo processos[20], mainMemory memory);
+void runProcesses(mainMemory memory);
 int isMemoryFull(mainMemory memory);
+
+processo listaProcessos[NUMBER_PROCESS];
 
 int main() {
     //INICIAR MEMORIA
     mainMemory memory;
+    srand(time(NULL));
     memory.frames = NUMBER_FRAME;
     memory.framesInUse = 0;
 
-    processo processos[20];
+    //iniciando vetor de processos
+    for(int i = 0; i < NUMBER_PROCESS; i++){
+        listaProcessos[i].pid = i;
+        listaProcessos[i].ativo = 0;
+        //inicializando a tabela de paginas
+        for(int j = 0; i < NUMBER_PAGES; i++){
+                listaProcessos[i].paginationTable[j].index = j;
+                listaProcessos[i].paginationTable[j].address = -1;
+        }
+    }
 
-    runProcesses(processos, memory);
+    runProcesses(memory);
 
     return 0;
 }
 
 // =============== BEGIN GERENCIADOR MEMORIA =============== //
-void runProcesses(processo processos[20], mainMemory memory) {
+void runProcesses(mainMemory memory) {   
+    int elapseTime = 1;
+    int run = 1;
 
+    while(run) {
+        int isFull = isMemoryFull(memory); // Verifica se memoria esta cheia
+        if ( isFull == 0 ) {
+	    //verificar se tem processo pronto
+            int i;
+	    }
+
+        elapseTime++;
+    }
+
+    //percorre o vetor de processos e solicita uma pagina aleatoria para cada um que esta ativo
 }
 
 int isMemoryFull(mainMemory memory) {
@@ -99,4 +128,41 @@ void escreveArquivo(char string[], int pid){
 	fputs(string, pa);
 	fclose(pa);	
 }
+
+//percorre o vetor de processo e solicita uma pagina aleatoria para cada um que estiver ativo
+void solicitaListaProcessos(){
+    for(int i = 0; i < NUMBER_PROCESS; i++){
+        if(listaProcessos[i].ativo == 1){
+            int randomPage = rand() % NUMBER_PAGES;
+            solicitaPagina(i, randomPage);
+        }
+    }
+}
+
+void solicitaPagina(int pid, int page){
+    //checar se a pagina requerida já está na memoria
+    int pageInMemory = 0;
+    int pageIndex;
+    for(int i = 0; i < WSL; i++){
+        if(listaProcessos[pid].pagesInMemory[i] == page){
+            pageInMemory = 1;
+            pageIndex = i;
+        }
+    }
+    //se o processo já está na memória, remove ele da posiçao atual e coloca no final
+    if(pageInMemory){
+        for(int i = pageIndex; i < WSL-1; i++){
+            listaProcessos[pid].pagesInMemory[i] = listaProcessos[pid].pagesInMemory[i+1];
+        }
+    }
+    //caso contrário remove o último e coloca a pagina requerida no final
+    else{
+        for(int i = 0; i < WSL-1; i++){
+            listaProcessos[pid].pagesInMemory[i] = listaProcessos[pid].pagesInMemory[i+1];
+        }
+    }
+    listaProcessos[pid].pagesInMemory[WSL-1] = page;
+    
+}
+
 // =============== END AUXILIARES =============== //
