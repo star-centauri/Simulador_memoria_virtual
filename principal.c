@@ -20,7 +20,6 @@ typedef struct
     int ativo;
     int pid;
     page paginationTable[NUMBER_PAGES];
-    int pagesInMemory[WSL];// ???
 } processo;
 
 typedef struct 
@@ -48,20 +47,14 @@ int main() {
 
     //iniciando vetor de processos
     for(int i = 0; i < NUMBER_PROCESS; i++) {
-        listaProcessos[i].pid = i;
+        listaProcessos[i].pid = i+1;
         listaProcessos[i].ativo = 0;
-        
-        //iniciar paginas na memoria
-        for (int i = 0; i < WSL; i++)
-        {
-            listaProcessos[i].pagesInMemory[i] = 0;
-        }
         
         //inicializando a tabela de paginas
         for(int j = 0; i < NUMBER_PAGES; i++){
-                listaProcessos[i].paginationTable[j].index = j;
-                listaProcessos[i].paginationTable[j].indexProccess = i;
-                listaProcessos[i].paginationTable[j].address = -1;
+            listaProcessos[i].paginationTable[j].index = j+1;
+            listaProcessos[i].paginationTable[j].indexProccess = i+1;
+            listaProcessos[i].paginationTable[j].address = -1;
         }
     }
 
@@ -111,18 +104,31 @@ void gerarNovoProcesso() {
 //percorre o vetor de processo e solicita uma pagina aleatoria para cada um que estiver ativo
 void solicitaListaProcessos() {
     for(int i = 0; i < NUMBER_PROCESS; i++) {
-        if(listaProcessos[i].ativo == 1){
+        
+        if( listaProcessos[i].ativo == 1 ) {
             int randomPage = rand() % NUMBER_PAGES;
-            //printf("ramdomPage: %d", randomPage);
-            algoritmoLRU(listaProcessos[i].pid, randomPage);
-
-            printf("Tabela de paginas:\n");
-            for (int j = 0; j < listaProcessos[i].paginationTable; j++)
-            {
+            
+            printf("Tabela de paginas do processo %d:\n", listaProcessos[i].pid);
+            for (int j = 0; j < NUMBER_PAGES; j++) {
                 printf("Pagina = %d | Frame = %d \n", listaProcessos[i].paginationTable[j].index, listaProcessos[i].paginationTable[j].address);
             }
-            
         }
+
+        // if(listaProcessos[i].ativo == 1){
+
+        //     int randomPage = rand() % NUMBER_PAGES;
+        //     printf("ramdomPage: %d \n", randomPage);
+        //     //algoritmoLRU(listaProcessos[i].pid, randomPage);
+
+        //     printf("Tabela de paginas do processo %d:\n", listaProcessos[i].pid);
+        //     for (int j = 0; j < listaProcessos[i].paginationTable; j++)
+        //     {
+        //         printf("Pagina = %d | Frame = %d \n", listaProcessos[i].paginationTable[j].index, listaProcessos[i].paginationTable[j].address);
+        //     }
+
+        //     break;
+            
+        // }
     }
 }
 
