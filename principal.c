@@ -74,7 +74,7 @@ int main() {
     //inicializar algoritmo
     for(int i = 0; i < NUMBER_FRAME; i++) {
         algoritmo.pageInUse[i].index = 0;
-        algoritmo.pageInUse[i].address = 0;
+        algoritmo.pageInUse[i].indexProccess = 0;
         algoritmo.pageInUse[i].address = -1;
     }
 
@@ -111,14 +111,78 @@ void gerarNovoProcesso() {
     }
 }
 
-// Verifica se memória está cheia
-int isMemoryFull(mainMemory memory) {
-    if (memory.frames == memory.framesInUse) {
-        return 1;
+//percorre o vetor de processo e solicita uma pagina aleatoria para cada um que estiver ativo
+void solicitaListaProcessos() {
+    for(int i = 0; i < NUMBER_PROCESS; i++){
+        if(listaProcessos[i].ativo == 1){
+            int randomPage = rand() % NUMBER_PAGES;
+            solicitaPagina(i, randomPage);
+        }
+    }
+}
+
+// algoritmo de substituição LRU
+void algoritmoLRU(int pid, int page) {
+
+    //percorrendo a lista de substituicao 
+    for(int i = 0; i < NUMBER_FRAME; i++) {
+        
+        // checar se já existe na lista
+        if ( algoritmo.pageInUse[i].index == page && algoritmo.pageInUse[i].indexProccess == pid ) {
+
+        }
+        else {
+            inserirPageNaMemoria(pid, page);
+        }
+    }   
+}
+
+// verifica se vai ocacionar troca de pegainas ou só um page fault
+void inserirPageNaMemoria(int pid, int page) {
+    int qtdPageInMemory = 0;
+
+    // verifica a quantidade de paginas na lista 
+    for (int i = 0; i < NUMBER_FRAME; i++) {
+        if ( algoritmo.pageInUse[i].indexProccess == pid ) {
+            qtdPageInMemory++;
+        }
     }
 
-    return 0;
+    // verifica se passou do limite
+    if (qtdPageInMemory >= WSL) {
+        // remover uma pagina para adiciona
+        upgrade(pid, page);
+    }
+    else {
+        add(pid, page);
+    }
 }
+
+// adiciona na lista LRU
+void add(int pid, int page) {
+    for(int i = 0; i < NUMBER_FRAME; i++) {
+
+        if (algoritmo.pageInUse[i].index == 0) {
+            algoritmo.pageInUse[i].index = page;
+            algoritmo.pageInUse[i].indexProccess = pid;
+            algoritmo.pageInUse[i].address = i;
+            
+            printf("PAGE FAULT: Processo = %d | Pagina = %d \n", pid, page);
+            
+            break;
+        }
+    }
+}
+
+// remove o processo mais antigo para trocar pela pagina
+void upgrade(int pid, int page) {
+    page removido = algoritmo.pageInUse[ 0 ];
+
+    for(int i = 0; i < NUMBER_FRAME - 1; i++) { 
+        algoritmo.pageInUse[ i ] = algoritmo.pageInUse[ i + 1 ]; 
+    };
+}
+
 // =============== END GERENCIADOR MEMORIA =============== //
 
 // =============== BEGIN AUXILIARES =============== //
@@ -158,73 +222,4 @@ void escreveArquivo(char string[], int pid){
 	fputs(string, pa);
 	fclose(pa);	
 }
-
-//percorre o vetor de processo e solicita uma pagina aleatoria para cada um que estiver ativo
-void solicitaListaProcessos() {
-    for(int i = 0; i < NUMBER_PROCESS; i++){
-        if(listaProcessos[i].ativo == 1){
-            int randomPage = rand() % NUMBER_PAGES;
-            solicitaPagina(i, randomPage);
-        }
-    }
-}
-
-void algoritmoLRU(int pid, int page) {
-
-    //percorrendo a lista de substituicao 
-    for(int i = 0; i < NUMBER_FRAME; i++) {
-        
-        // checar se já existe na lista
-        if ( algoritmo.pageInUse[i].index == page && algoritmo.pageInUse[i].indexProccess == pid ) {
-
-        }
-        else {
-            inserirPageNaMemoria(pid, page);
-        }
-    }
-
-
-
-    //checar se a pagina requerida já está na memoria
-    int pageInMemory = 0;
-    int pageIndex;
-    for(int i = 0; i < WSL; i++){
-        if(listaProcessos[pid].pagesInMemory[i] == page){
-            pageInMemory = 1;
-            pageIndex = i;
-        }
-    }
-    //se o processo já está na memória, remove ele da posiçao atual e coloca no final
-    if(pageInMemory){
-        for(int i = pageIndex; i < WSL-1; i++){
-            listaProcessos[pid].pagesInMemory[i] = listaProcessos[pid].pagesInMemory[i+1];
-        }
-    }
-    //caso contrário remove o último e coloca a pagina requerida no final
-    else{
-        for(int i = 0; i < WSL-1; i++){
-            listaProcessos[pid].pagesInMemory[i] = listaProcessos[pid].pagesInMemory[i+1];
-        }
-    }
-    listaProcessos[pid].pagesInMemory[WSL-1] = page;    
-}
-
-void inserirPageNaMemoria(int pid, int page) {
-    int qtdPageInMemory = 0;
-
-    for (int i = 0; i < NUMBER_FRAME; i++) {
-        if ( algoritmo.pageInUse[i].indexProccess == pid ) {
-            qtdPageInMemory++;
-        }
-    }
-
-    if (qtdPageInMemory >= 3) {
-        // remover uma pagina para adiciona
-    }
-    else {
-        add(pid, page);
-        //inserir
-    }
-}
-
 // =============== END AUXILIARES =============== //
