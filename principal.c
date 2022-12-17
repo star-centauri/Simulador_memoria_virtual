@@ -37,6 +37,7 @@ typedef struct
 void delay(int number_of_seconds);
 void escreveArquivo(char string[], int pid);
 void runProcesses(mainMemory memory);
+void gerarNovoProcesso();
 int isMemoryFull(mainMemory memory);
 
 processo listaProcessos[NUMBER_PROCESS];
@@ -70,11 +71,11 @@ void runProcesses(mainMemory memory) {
     int run = 1;
 
     while(run) {
-        int isFull = isMemoryFull(memory); // Verifica se memoria esta cheia
-        if ( isFull == 0 ) {
-	    //verificar se tem processo pronto
-            int i;
-	    }
+        
+        if ( elapseTime%3==0 ) {
+            gerarNovoProcesso();
+            solicitaListaProcessos();
+        }
 
         elapseTime++;
     }
@@ -82,6 +83,17 @@ void runProcesses(mainMemory memory) {
     //percorre o vetor de processos e solicita uma pagina aleatoria para cada um que esta ativo
 }
 
+// Faz a simulação de criação de um novo processo, ativando-o para execução
+void gerarNovoProcesso() {
+    for(int i = 0; i < NUMBER_PROCESS; i++) {
+        if ( listaProcessos[i].ativo == 0 ) {
+            listaProcessos[i].ativo = 1;
+            break;
+        }
+    }
+}
+
+// Verifica se memória está cheia
 int isMemoryFull(mainMemory memory) {
     if (memory.frames == memory.framesInUse) {
         return 1;
