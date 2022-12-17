@@ -8,11 +8,6 @@
 #define NUMBER_PAGES 10
 #define NUMBER_PROCESS 20
 
-typedef struct {
-    int frames;
-    int framesInUse;
-} mainMemory;
-
 typedef struct
 {
     int index;
@@ -25,7 +20,7 @@ typedef struct
     int ativo;
     int pid;
     page paginationTable[NUMBER_PAGES];
-    int pagesInMemory[WSL];
+    int pagesInMemory[WSL];// ???
 } processo;
 
 typedef struct 
@@ -35,22 +30,21 @@ typedef struct
 
 void delay(int number_of_seconds);
 void escreveArquivo(char string[], int pid);
-void runProcesses(mainMemory memory);
+void runProcesses();
 void gerarNovoProcesso();
 void inserirPageNaMemoria(int pid, int page);
 void solicitaListaProcessos();
 void algoritmoLRU(int pid, int page);
-int isMemoryFull(mainMemory memory);
+void updateList(int pid, int page);
+void add(int pid, int page);
+void updateNotFault(int pid, int pageId);
 
 processo listaProcessos[NUMBER_PROCESS];
-mainMemory memory;
 LRU algoritmo;
 
 int main() {
     //INICIAR MEMORIA
     srand(time(NULL));
-    memory.frames = NUMBER_FRAME;
-    memory.framesInUse = 0;
 
     //iniciando vetor de processos
     for(int i = 0; i < NUMBER_PROCESS; i++) {
@@ -61,7 +55,7 @@ int main() {
         for (int i = 0; i < WSL; i++)
         {
             listaProcessos[i].pagesInMemory[i] = 0;
-        };
+        }
         
         //inicializando a tabela de paginas
         for(int j = 0; i < NUMBER_PAGES; i++){
@@ -78,27 +72,28 @@ int main() {
         algoritmo.pageInUse[i].address = -1;
     }
 
-    runProcesses(memory);
+    runProcesses();
 
     return 0;
 }
 
 // =============== BEGIN GERENCIADOR MEMORIA =============== //
-void runProcesses(mainMemory memory) {   
+void runProcesses() {   
     int elapseTime = 1;
     int run = 1;
 
     while(run) {
-        
+        printf("Tempo corrido = %d \n", elapseTime);
+
         if ( elapseTime%3==0 ) {
             gerarNovoProcesso();
             solicitaListaProcessos();
         }
 
         elapseTime++;
-    }
 
-    //percorre o vetor de processos e solicita uma pagina aleatoria para cada um que esta ativo
+        if (elapseTime == 5) { run = 0; }
+    }
 }
 
 // Faz a simulação de criação de um novo processo, ativando-o para execução
@@ -106,6 +101,8 @@ void gerarNovoProcesso() {
     for(int i = 0; i < NUMBER_PROCESS; i++) {
         if ( listaProcessos[i].ativo == 0 ) {
             listaProcessos[i].ativo = 1;
+
+            printf("Processo %d criado.\n", i);
             break;
         }
     }
@@ -113,10 +110,18 @@ void gerarNovoProcesso() {
 
 //percorre o vetor de processo e solicita uma pagina aleatoria para cada um que estiver ativo
 void solicitaListaProcessos() {
-    for(int i = 0; i < NUMBER_PROCESS; i++){
+    for(int i = 0; i < NUMBER_PROCESS; i++) {
         if(listaProcessos[i].ativo == 1){
             int randomPage = rand() % NUMBER_PAGES;
-            solicitaPagina(i, randomPage);
+            //printf("ramdomPage: %d", randomPage);
+            algoritmoLRU(listaProcessos[i].pid, randomPage);
+
+            printf("Tabela de paginas:\n");
+            for (int j = 0; j < listaProcessos[i].paginationTable; j++)
+            {
+                printf("Pagina = %d | Frame = %d \n", listaProcessos[i].paginationTable[j].index, listaProcessos[i].paginationTable[j].address);
+            }
+            
         }
     }
 }
@@ -129,11 +134,14 @@ void algoritmoLRU(int pid, int page) {
         
         // checar se já existe na lista
         if ( algoritmo.pageInUse[i].index == page && algoritmo.pageInUse[i].indexProccess == pid ) {
-
+            updateNotFault(pid, page);
+            break;
         }
         else {
             inserirPageNaMemoria(pid, page);
+            break;
         }
+
     }   
 }
 
@@ -151,7 +159,7 @@ void inserirPageNaMemoria(int pid, int page) {
     // verifica se passou do limite
     if (qtdPageInMemory >= WSL) {
         // remover uma pagina para adiciona
-        upgrade(pid, page);
+        updateList(pid, page);
     }
     else {
         add(pid, page);
@@ -168,6 +176,7 @@ void add(int pid, int page) {
             algoritmo.pageInUse[i].address = i;
             
             printf("PAGE FAULT: Processo = %d | Pagina = %d \n", pid, page);
+            printf("Sem substituição! \n");
             
             break;
         }
@@ -175,12 +184,42 @@ void add(int pid, int page) {
 }
 
 // remove o processo mais antigo para trocar pela pagina
-void upgrade(int pid, int page) {
-    page removido = algoritmo.pageInUse[ 0 ];
+void updateList(int pid, int pageId) {
+    page removido = algoritmo.pageInUse[0];
 
     for(int i = 0; i < NUMBER_FRAME - 1; i++) { 
         algoritmo.pageInUse[ i ] = algoritmo.pageInUse[ i + 1 ]; 
-    };
+    }
+
+    for (int frame = 0; frame < NUMBER_FRAME - 1; frame++) {
+        if ( algoritmo.pageInUse[ frame ].index == 0 ) {
+            algoritmo.pageInUse[ frame ].index = pageId;
+            algoritmo.pageInUse[ frame ].indexProccess = pid;
+            algoritmo.pageInUse[ frame ].address = frame;
+        }
+    }
+
+    printf("PAGE FAULT: Processo = %d | Pagina = %d \n", pageId, pid);
+    printf("Pagina %d do processo %d substituida! \n", removido.index, removido.indexProccess);
+}
+
+void updateNotFault(int pid, int pageId) {
+    page removido = algoritmo.pageInUse[0];
+
+    for(int i = 0; i < NUMBER_FRAME - 1; i++) { 
+        algoritmo.pageInUse[ i ] = algoritmo.pageInUse[ i + 1 ]; 
+    }
+
+    for (int frame = 0; frame < NUMBER_FRAME - 1; frame++) {
+        if ( algoritmo.pageInUse[ frame ].index == 0 ) {
+            algoritmo.pageInUse[ frame ].index = pageId;
+            algoritmo.pageInUse[ frame ].indexProccess = pid;
+            algoritmo.pageInUse[ frame ].address = frame;
+        }
+    }
+
+    printf("NOT PAGE FAULT: Processo = %d | Pagina = %d \n", pageId, pid);
+    printf("Sem substituição! \n");
 }
 
 // =============== END GERENCIADOR MEMORIA =============== //
