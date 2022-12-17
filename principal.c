@@ -16,6 +16,7 @@ typedef struct {
 typedef struct
 {
     int index;
+    int indexProccess;
     int address;
 } page;
 
@@ -25,39 +26,56 @@ typedef struct
     int pid;
     page paginationTable[NUMBER_PAGES];
     int pagesInMemory[WSL];
-    int inMemory;
 } processo;
 
 typedef struct 
 {
-    int wsl;
-    int pageInUse;
+    page pageInUse[NUMBER_FRAME];
 } LRU;
 
 void delay(int number_of_seconds);
 void escreveArquivo(char string[], int pid);
 void runProcesses(mainMemory memory);
 void gerarNovoProcesso();
+void inserirPageNaMemoria(int pid, int page);
+void solicitaListaProcessos();
+void algoritmoLRU(int pid, int page);
 int isMemoryFull(mainMemory memory);
 
 processo listaProcessos[NUMBER_PROCESS];
+mainMemory memory;
+LRU algoritmo;
 
 int main() {
     //INICIAR MEMORIA
-    mainMemory memory;
     srand(time(NULL));
     memory.frames = NUMBER_FRAME;
     memory.framesInUse = 0;
 
     //iniciando vetor de processos
-    for(int i = 0; i < NUMBER_PROCESS; i++){
+    for(int i = 0; i < NUMBER_PROCESS; i++) {
         listaProcessos[i].pid = i;
         listaProcessos[i].ativo = 0;
+        
+        //iniciar paginas na memoria
+        for (int i = 0; i < WSL; i++)
+        {
+            listaProcessos[i].pagesInMemory[i] = 0;
+        };
+        
         //inicializando a tabela de paginas
         for(int j = 0; i < NUMBER_PAGES; i++){
                 listaProcessos[i].paginationTable[j].index = j;
+                listaProcessos[i].paginationTable[j].indexProccess = i;
                 listaProcessos[i].paginationTable[j].address = -1;
         }
+    }
+
+    //inicializar algoritmo
+    for(int i = 0; i < NUMBER_FRAME; i++) {
+        algoritmo.pageInUse[i].index = 0;
+        algoritmo.pageInUse[i].address = 0;
+        algoritmo.pageInUse[i].address = -1;
     }
 
     runProcesses(memory);
@@ -142,7 +160,7 @@ void escreveArquivo(char string[], int pid){
 }
 
 //percorre o vetor de processo e solicita uma pagina aleatoria para cada um que estiver ativo
-void solicitaListaProcessos(){
+void solicitaListaProcessos() {
     for(int i = 0; i < NUMBER_PROCESS; i++){
         if(listaProcessos[i].ativo == 1){
             int randomPage = rand() % NUMBER_PAGES;
@@ -151,7 +169,22 @@ void solicitaListaProcessos(){
     }
 }
 
-void solicitaPagina(int pid, int page){
+void algoritmoLRU(int pid, int page) {
+
+    //percorrendo a lista de substituicao 
+    for(int i = 0; i < NUMBER_FRAME; i++) {
+        
+        // checar se já existe na lista
+        if ( algoritmo.pageInUse[i].index == page && algoritmo.pageInUse[i].indexProccess == pid ) {
+
+        }
+        else {
+            inserirPageNaMemoria(pid, page);
+        }
+    }
+
+
+
     //checar se a pagina requerida já está na memoria
     int pageInMemory = 0;
     int pageIndex;
@@ -173,8 +206,25 @@ void solicitaPagina(int pid, int page){
             listaProcessos[pid].pagesInMemory[i] = listaProcessos[pid].pagesInMemory[i+1];
         }
     }
-    listaProcessos[pid].pagesInMemory[WSL-1] = page;
-    
+    listaProcessos[pid].pagesInMemory[WSL-1] = page;    
+}
+
+void inserirPageNaMemoria(int pid, int page) {
+    int qtdPageInMemory = 0;
+
+    for (int i = 0; i < NUMBER_FRAME; i++) {
+        if ( algoritmo.pageInUse[i].indexProccess == pid ) {
+            qtdPageInMemory++;
+        }
+    }
+
+    if (qtdPageInMemory >= 3) {
+        // remover uma pagina para adiciona
+    }
+    else {
+        add(pid, page);
+        //inserir
+    }
 }
 
 // =============== END AUXILIARES =============== //
