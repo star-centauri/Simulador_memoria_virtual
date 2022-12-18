@@ -51,7 +51,7 @@ int main() {
         listaProcessos[i].ativo = 0;
         
         //inicializando a tabela de paginas
-        for(int j = 0; i < NUMBER_PAGES; i++){
+        for(int j = 0; j < NUMBER_PAGES; j++){
             listaProcessos[i].paginationTable[j].index = j+1;
             listaProcessos[i].paginationTable[j].indexProccess = i+1;
             listaProcessos[i].paginationTable[j].address = -1;
@@ -85,7 +85,7 @@ void runProcesses() {
 
         elapseTime++;
 
-        if (elapseTime == 5) { run = 0; }
+        if (elapseTime == 10) { run = 0; }
     }
 }
 
@@ -95,7 +95,7 @@ void gerarNovoProcesso() {
         if ( listaProcessos[i].ativo == 0 ) {
             listaProcessos[i].ativo = 1;
 
-            printf("Processo %d criado.\n", i);
+            printf("Processo %d criado.\n", listaProcessos[i].pid);
             break;
         }
     }
@@ -107,28 +107,13 @@ void solicitaListaProcessos() {
         
         if( listaProcessos[i].ativo == 1 ) {
             int randomPage = rand() % NUMBER_PAGES;
-            
+            algoritmoLRU(listaProcessos[i].pid, randomPage);
+
             printf("Tabela de paginas do processo %d:\n", listaProcessos[i].pid);
             for (int j = 0; j < NUMBER_PAGES; j++) {
                 printf("Pagina = %d | Frame = %d \n", listaProcessos[i].paginationTable[j].index, listaProcessos[i].paginationTable[j].address);
             }
         }
-
-        // if(listaProcessos[i].ativo == 1){
-
-        //     int randomPage = rand() % NUMBER_PAGES;
-        //     printf("ramdomPage: %d \n", randomPage);
-        //     //algoritmoLRU(listaProcessos[i].pid, randomPage);
-
-        //     printf("Tabela de paginas do processo %d:\n", listaProcessos[i].pid);
-        //     for (int j = 0; j < listaProcessos[i].paginationTable; j++)
-        //     {
-        //         printf("Pagina = %d | Frame = %d \n", listaProcessos[i].paginationTable[j].index, listaProcessos[i].paginationTable[j].address);
-        //     }
-
-        //     break;
-            
-        // }
     }
 }
 
@@ -179,10 +164,12 @@ void add(int pid, int page) {
         if (algoritmo.pageInUse[i].index == 0) {
             algoritmo.pageInUse[i].index = page;
             algoritmo.pageInUse[i].indexProccess = pid;
-            algoritmo.pageInUse[i].address = i;
+            algoritmo.pageInUse[i].address = i+1;
+
+            listaProcessos[pid-1].paginationTable[page-1].address = i+1;
             
             printf("PAGE FAULT: Processo = %d | Pagina = %d \n", pid, page);
-            printf("Sem substituição! \n");
+            printf("Sem substituicao! \n");
             
             break;
         }
