@@ -85,7 +85,7 @@ void runProcesses() {
 
         elapseTime++;
 
-        if (elapseTime == 10) { run = 0; }
+        if (elapseTime == 20) { run = 0; }
     }
 }
 
@@ -94,8 +94,7 @@ void gerarNovoProcesso() {
     for(int i = 0; i < NUMBER_PROCESS; i++) {
         if ( listaProcessos[i].ativo == 0 ) {
             listaProcessos[i].ativo = 1;
-
-            printf("Processo %d criado.\n", listaProcessos[i].pid);
+            printf("\nProcesso %d criado.\n", listaProcessos[i].pid);
             break;
         }
     }
@@ -109,10 +108,28 @@ void solicitaListaProcessos() {
             int randomPage = rand() % NUMBER_PAGES;
             algoritmoLRU(listaProcessos[i].pid, randomPage);
 
-            printf("Tabela de paginas do processo %d:\n", listaProcessos[i].pid);
+           /*  printf("Tabela de paginas do processo %d:\n", listaProcessos[i].pid);
             for (int j = 0; j < NUMBER_PAGES; j++) {
                 printf("Pagina = %d | Frame = %d \n", listaProcessos[i].paginationTable[j].index, listaProcessos[i].paginationTable[j].address);
+            } */
+
+            printf("\nTabela de paginas do processo %d:\n", listaProcessos[i].pid);
+            printf("---------------------\n");
+            for (int j = 0; j < NUMBER_PAGES; j++) {
+                    if(listaProcessos[i].paginationTable[j].address != -1 ){
+                        printf("Pagina = %d | Frame = %d \n", listaProcessos[i].paginationTable[j].index, listaProcessos[i].paginationTable[j].address);
+                    }
             }
+            printf("---------------------\n");
+            printf("Frame\n");
+            for (int j = 0; j < NUMBER_FRAME ; j++) {
+                printf("%d ", algoritmo.pageInUse[j].indexProccess);
+               /*  algoritmo.pageInUse[i].index = 0;
+                algoritmo.pageInUse[i].indexProccess = 0;
+                algoritmo.pageInUse[i].address = -1;  */
+            }
+            printf("\n");
+
         }
     }
 }
@@ -192,7 +209,7 @@ void updateList(int pid, int pageId) {
         }
     }
 
-    printf("PAGE FAULT: Processo = %d | Pagina = %d \n", pageId, pid);
+    printf("PAGE FAULT: Processo = %d | Pagina = %d \n", pid, pageId);
     printf("Pagina %d do processo %d substituida! \n", removido.index, removido.indexProccess);
 }
 
@@ -211,7 +228,7 @@ void updateNotFault(int pid, int pageId) {
         }
     }
 
-    printf("NOT PAGE FAULT: Processo = %d | Pagina = %d \n", pageId, pid);
+    printf("NOT PAGE FAULT: Processo = %d | Pagina = %d \n", pid, pageId);
     printf("Sem substituição! \n");
 }
 
