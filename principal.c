@@ -36,7 +36,7 @@ void solicitaListaProcessos();
 void algoritmoLRU(int pid, int page);
 void updateList(int pid, int page);
 void add(int pid, int page);
-void updateNotFault(int pid, int pageId);
+void updateNotFault(int pid, int pageId, int index);
 
 processo listaProcessos[NUMBER_PROCESS];
 LRU algoritmo;
@@ -105,7 +105,7 @@ void solicitaListaProcessos() {
     for(int i = 0; i < NUMBER_PROCESS; i++) {
         
         if( listaProcessos[i].ativo == 1 ) {
-            int randomPage = rand() % NUMBER_PAGES;
+            int randomPage = (rand() % NUMBER_PAGES) + 1;
             algoritmoLRU(listaProcessos[i].pid, randomPage);
 
            /*  printf("Tabela de paginas do processo %d:\n", listaProcessos[i].pid);
@@ -123,7 +123,7 @@ void solicitaListaProcessos() {
             printf("---------------------\n");
             printf("Frame\n");
             for (int j = 0; j < NUMBER_FRAME ; j++) {
-                printf("%d ", algoritmo.pageInUse[j].indexProccess);
+                printf("P%d-#%d ", algoritmo.pageInUse[j].indexProccess, algoritmo.pageInUse[j].index);
                /*  algoritmo.pageInUse[i].index = 0;
                 algoritmo.pageInUse[i].indexProccess = 0;
                 algoritmo.pageInUse[i].address = -1;  */
@@ -136,20 +136,18 @@ void solicitaListaProcessos() {
 
 // algoritmo de substituição LRU
 void algoritmoLRU(int pid, int page) {
+    int existeNaLista = 0;
 
-    //percorrendo a lista de substituicao 
     for(int i = 0; i < NUMBER_FRAME; i++) {
-        
-        // checar se já existe na lista
         if ( algoritmo.pageInUse[i].index == page && algoritmo.pageInUse[i].indexProccess == pid ) {
-            updateNotFault(pid, page);
+            updateNotFault(pid, page, i);
+            existeNaLista = 1;
             break;
         }
-        else {
-            inserirPageNaMemoria(pid, page);
-            break;
-        }
+    }
 
+    if ( existeNaLista == 0 ) {
+        inserirPageNaMemoria(pid, page);
     }   
 }
 
@@ -165,7 +163,7 @@ void inserirPageNaMemoria(int pid, int page) {
     }
 
     // verifica se passou do limite
-    if (qtdPageInMemory >= WSL) {
+    if (qtdPageInMemory == WSL) {
         // remover uma pagina para adiciona
         updateList(pid, page);
     }
@@ -196,9 +194,17 @@ void add(int pid, int page) {
 // remove o processo mais antigo para trocar pela pagina
 void updateList(int pid, int pageId) {
     page removido = algoritmo.pageInUse[0];
+    int indexRemove = 0;
 
     for(int i = 0; i < NUMBER_FRAME - 1; i++) { 
-        algoritmo.pageInUse[ i ] = algoritmo.pageInUse[ i + 1 ]; 
+        if ( algoritmo.pageInUse[ i ].indexProccess == pageId ) {
+            int indexRemove = i;
+            break;
+        }
+    }
+    
+    for(int i = indexRemove; i < NUMBER_FRAME - 1; i++) {
+        algoritmo.pageInUse[ i ] = algoritmo.pageInUse[ i + 1 ];
     }
 
     for (int frame = 0; frame < NUMBER_FRAME - 1; frame++) {
@@ -213,10 +219,10 @@ void updateList(int pid, int pageId) {
     printf("Pagina %d do processo %d substituida! \n", removido.index, removido.indexProccess);
 }
 
-void updateNotFault(int pid, int pageId) {
-    page removido = algoritmo.pageInUse[0];
+void updateNotFault(int pid, int pageId, int index) {
 
-    for(int i = 0; i < NUMBER_FRAME - 1; i++) { 
+    int i;
+    for(i = index; i < NUMBER_FRAME - 1; i++) { 
         algoritmo.pageInUse[ i ] = algoritmo.pageInUse[ i + 1 ]; 
     }
 
@@ -225,11 +231,12 @@ void updateNotFault(int pid, int pageId) {
             algoritmo.pageInUse[ frame ].index = pageId;
             algoritmo.pageInUse[ frame ].indexProccess = pid;
             algoritmo.pageInUse[ frame ].address = frame;
+            break;
         }
     }
 
     printf("NOT PAGE FAULT: Processo = %d | Pagina = %d \n", pid, pageId);
-    printf("Sem substituição! \n");
+    printf("Sem substituicao! \n");
 }
 
 // =============== END GERENCIADOR MEMORIA =============== //
