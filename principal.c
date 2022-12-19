@@ -76,8 +76,6 @@ void runProcesses() {
     int run = 1;
 
     while(run) {
-        printf("Tempo corrido = %d \n", elapseTime);
-
         if ( elapseTime%3==0 ) {
             gerarNovoProcesso();
             solicitaListaProcessos();
@@ -94,7 +92,7 @@ void gerarNovoProcesso() {
     for(int i = 0; i < NUMBER_PROCESS; i++) {
         if ( listaProcessos[i].ativo == 0 ) {
             listaProcessos[i].ativo = 1;
-            printf("\nProcesso %d criado.\n", listaProcessos[i].pid);
+            printf("\nProcesso %d pronto.\n\n", listaProcessos[i].pid);
             break;
         }
     }
@@ -108,11 +106,6 @@ void solicitaListaProcessos() {
             int randomPage = (rand() % NUMBER_PAGES) + 1;
             algoritmoLRU(listaProcessos[i].pid, randomPage);
 
-           /*  printf("Tabela de paginas do processo %d:\n", listaProcessos[i].pid);
-            for (int j = 0; j < NUMBER_PAGES; j++) {
-                printf("Pagina = %d | Frame = %d \n", listaProcessos[i].paginationTable[j].index, listaProcessos[i].paginationTable[j].address);
-            } */
-
             printf("\nTabela de paginas do processo %d:\n", listaProcessos[i].pid);
             printf("---------------------\n");
             for (int j = 0; j < NUMBER_PAGES; j++) {
@@ -120,7 +113,7 @@ void solicitaListaProcessos() {
                         printf("Pagina = %d | Frame = %d \n", listaProcessos[i].paginationTable[j].index, listaProcessos[i].paginationTable[j].address);
                     }
             }
-            printf("---------------------\n");
+            printf("---------------------\n\n");
             printf("Frame\n");
             for (int j = 0; j < NUMBER_FRAME ; j++) {
                 printf("P%d-#%d ", algoritmo.pageInUse[j].indexProccess, algoritmo.pageInUse[j].index);
@@ -195,9 +188,13 @@ void add(int pid, int page) {
 void updateList(int pid, int pageId) {
     page removido = algoritmo.pageInUse[0];
     int indexRemove = 0;
+    int frameId = -1;
 
     for(int i = 0; i < NUMBER_FRAME - 1; i++) { 
-        if ( algoritmo.pageInUse[ i ].indexProccess == pageId ) {
+        if ( algoritmo.pageInUse[ i ].indexProccess == pid ) {
+            int pageOldId = algoritmo.pageInUse[ i ].index;
+            listaProcessos[pid-1].paginationTable[pageOldId-1].address = -1;
+            frameId = algoritmo.pageInUse[ i ].address;
             int indexRemove = i;
             break;
         }
@@ -212,6 +209,9 @@ void updateList(int pid, int pageId) {
             algoritmo.pageInUse[ frame ].index = pageId;
             algoritmo.pageInUse[ frame ].indexProccess = pid;
             algoritmo.pageInUse[ frame ].address = frame;
+
+            listaProcessos[pid-1].paginationTable[pageId-1].address = frameId;
+            break;
         }
     }
 
@@ -220,7 +220,6 @@ void updateList(int pid, int pageId) {
 }
 
 void updateNotFault(int pid, int pageId, int index) {
-
     int i;
     for(i = index; i < NUMBER_FRAME - 1; i++) { 
         algoritmo.pageInUse[ i ] = algoritmo.pageInUse[ i + 1 ]; 
