@@ -37,13 +37,15 @@ void algoritmoLRU(int pid, int page);
 void updateList(int pid, int page);
 void add(int pid, int page);
 void updateNotFault(int pid, int pageId, int index);
+void removeProcessoOld(int pid, int page);
 
 processo listaProcessos[NUMBER_PROCESS];
 LRU algoritmo;
+int memoryInUse;
 
 int main() {
-    //INICIAR MEMORIA
     srand(time(NULL));
+    memoryInUse = 0;
 
     //iniciando vetor de processos
     for(int i = 0; i < NUMBER_PROCESS; i++) {
@@ -83,7 +85,7 @@ void runProcesses() {
 
         elapseTime++;
 
-        if (elapseTime == 20) { run = 0; }
+        if (elapseTime == 50) { run = 0; }
     }
 }
 
@@ -116,10 +118,16 @@ void solicitaListaProcessos() {
             printf("---------------------\n\n");
             printf("Frame\n");
             for (int j = 0; j < NUMBER_FRAME ; j++) {
-                printf("P%d-#%d ", algoritmo.pageInUse[j].indexProccess, algoritmo.pageInUse[j].index);
-               /*  algoritmo.pageInUse[i].index = 0;
-                algoritmo.pageInUse[i].indexProccess = 0;
-                algoritmo.pageInUse[i].address = -1;  */
+
+                if (algoritmo.pageInUse[j].indexProccess != 0 && algoritmo.pageInUse[j].index != 0) {
+                    printf("P%d-#%d | ", algoritmo.pageInUse[j].indexProccess, algoritmo.pageInUse[j].index);
+                }
+                else {
+                    printf("- | ");
+                }
+
+                if (j == 31 ) printf("\n");
+                
             }
             printf("\n");
 
@@ -167,14 +175,19 @@ void inserirPageNaMemoria(int pid, int page) {
 
 // adiciona na lista LRU
 void add(int pid, int page) {
-    for(int i = 0; i < NUMBER_FRAME; i++) {
+    if (memoryInUse == NUMBER_FRAME) {
+        printf("\nMemoria cheia!\n");
+        removeProcessoOld(pid, page);
+    }
 
+    for(int i = 0; i < NUMBER_FRAME; i++) {
         if (algoritmo.pageInUse[i].index == 0) {
             algoritmo.pageInUse[i].index = page;
             algoritmo.pageInUse[i].indexProccess = pid;
             algoritmo.pageInUse[i].address = i+1;
 
             listaProcessos[pid-1].paginationTable[page-1].address = i+1;
+            memoryInUse++;
             
             printf("PAGE FAULT: Processo = %d | Pagina = %d \n", pid, page);
             printf("Sem substituicao! \n");
@@ -184,18 +197,48 @@ void add(int pid, int page) {
     }
 }
 
+void removeProcessoOld(int pid, int pageId) {
+    page processoOld = algoritmo.pageInUse[0];
+    LRU algoritmoAuxiliar;
+    int j = 0;
+
+    for (int i = 0; i < NUMBER_FRAME; i++)
+    {
+        if ( algoritmo.pageInUse[i].indexProccess != processoOld.indexProccess ) {
+            algoritmoAuxiliar.pageInUse[j] = algoritmo.pageInUse[i];
+            j++; 
+        }
+        else {
+            memoryInUse--;
+            int pageId = algoritmo.pageInUse[i].index;
+            listaProcessos[pid-1].paginationTable[pageId-1].address = -1;
+        }
+    }
+
+    for (int z = j; z < NUMBER_FRAME; z++)
+    {
+        algoritmoAuxiliar.pageInUse[z].index = 0;
+        algoritmoAuxiliar.pageInUse[z].indexProccess = 0;
+        algoritmoAuxiliar.pageInUse[z].address = -1;
+    }
+    
+    
+    algoritmo = algoritmoAuxiliar;
+}
+
 // remove o processo mais antigo para trocar pela pagina
 void updateList(int pid, int pageId) {
-    page removido = algoritmo.pageInUse[0];
+    int pageOldId = 0;
     int indexRemove = 0;
     int frameId = -1;
 
     for(int i = 0; i < NUMBER_FRAME - 1; i++) { 
         if ( algoritmo.pageInUse[ i ].indexProccess == pid ) {
-            int pageOldId = algoritmo.pageInUse[ i ].index;
+            pageOldId = algoritmo.pageInUse[ i ].index;
             listaProcessos[pid-1].paginationTable[pageOldId-1].address = -1;
             frameId = algoritmo.pageInUse[ i ].address;
-            int indexRemove = i;
+            indexRemove = i;
+            
             break;
         }
     }
@@ -216,12 +259,11 @@ void updateList(int pid, int pageId) {
     }
 
     printf("PAGE FAULT: Processo = %d | Pagina = %d \n", pid, pageId);
-    printf("Pagina %d do processo %d substituida! \n", removido.index, removido.indexProccess);
+    printf("Pagina %d do processo %d substituida! \n", pageOldId, pid);
 }
 
 void updateNotFault(int pid, int pageId, int index) {
-    int i;
-    for(i = index; i < NUMBER_FRAME - 1; i++) { 
+    for(int i = index; i < NUMBER_FRAME - 1; i++) { 
         algoritmo.pageInUse[ i ] = algoritmo.pageInUse[ i + 1 ]; 
     }
 
